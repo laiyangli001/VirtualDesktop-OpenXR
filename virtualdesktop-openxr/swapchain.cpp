@@ -379,17 +379,15 @@ namespace virtualdesktop_openxr {
         // - Our pre-processing shader does not support cubemaps.
         // - Our pre-processing shader does not support MSAA.
         // Additionally, OVR only uses KMT HANDLE, so if NT HANDLE are required, we must use our own images.
-        if (desc.Type == ovrTexture_2D && desc.SampleCount == 1 && !m_forceSlowpathSwapchains &&
-            !requireNTHandleSharing()) {
-            if (desc.ArraySize > 1) {
-                Log("Creating a swapchain with texture array\n");
-            }
+        if (desc.Type == ovrTexture_2D && desc.SampleCount == 1 && desc.ArraySize == 1 &&
+            !m_forceSlowpathSwapchains && !requireNTHandleSharing()) {
             CHECK_OVRCMD(ovr_CreateTextureSwapChainDX(m_ovrSession, m_ovrSubmissionDevice.Get(), &desc, &ovrSwapchain));
             CHECK_OVRCMD(ovr_GetTextureSwapChainLength(m_ovrSession, ovrSwapchain, &length));
         } else {
             Log("Creating a slow-path swapchain (reason: %d)\n",
                 desc.Type != ovrTexture_2D ? 1
                 : desc.SampleCount != 1    ? 2
+                : desc.ArraySize != 1      ? 4
                                            : 3);
             length = desc.StaticImage ? 1 : 3;
         }
