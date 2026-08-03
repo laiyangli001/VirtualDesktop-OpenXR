@@ -524,7 +524,8 @@ namespace virtualdesktop_openxr {
             return;
         }
 
-        const bool needCopy = (slice > 0 || !xrSwapchain.appSwapchain.ovrSwapchain);
+        const bool needCopy = (xrSwapchain.xrDesc.arraySize > 1 || slice > 0 ||
+                               !xrSwapchain.appSwapchain.ovrSwapchain);
 
         const int lastReleasedIndex = xrSwapchain.lastReleasedIndex;
 
@@ -703,7 +704,8 @@ namespace virtualdesktop_openxr {
     // when resolving MSAA.
     void OpenXrRuntime::ensureSwapchainSliceResources(Swapchain& xrSwapchain, uint32_t slice) const {
         if (xrSwapchain.resolvedSlices.size() <= slice) {
-            if (slice == 0 && xrSwapchain.appSwapchain.ovrSwapchain) {
+            if (slice == 0 && xrSwapchain.xrDesc.arraySize == 1 &&
+                xrSwapchain.appSwapchain.ovrSwapchain) {
                 xrSwapchain.resolvedSlices.push_back(xrSwapchain.appSwapchain);
             } else {
                 xrSwapchain.resolvedSlices.resize(slice + 1);
