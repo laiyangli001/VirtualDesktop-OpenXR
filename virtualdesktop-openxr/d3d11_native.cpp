@@ -566,9 +566,9 @@ namespace virtualdesktop_openxr {
             CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
         }
 
+        const bool isDepthBuffer =
+            (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
         if (needCopy) {
-            const bool isDepthBuffer =
-                (xrSwapchain.xrDesc.usageFlags & XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
             TraceLoggingWrite(g_traceProvider,
                               "ResolveSwapchainImage_Copy",
                               TLArg(xrSwapchain.ovrDesc.SampleCount == 1 ? "None"
@@ -688,7 +688,30 @@ namespace virtualdesktop_openxr {
                     }
                 }
             }
+        }
 
+        if (xrSwapchain.xrDesc.arraySize > 1 && !isDepthBuffer) {
+            auto& renderTargets = xrSwapchain.resolvedSlices[slice].rtvs;
+            if (static_cast<int>(renderTargets.size()) <= ovrDestIndex) {
+                renderTargets.resize(ovrDestIndex + 1);
+            }
+            if (!renderTargets[ovrDestIndex]) {
+                D3D11_RENDER_TARGET_VIEW_DESC desc{};
+                desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+                desc.Format = xrSwapchain.dxgiFormatForSubmission;
+                CHECK_HRCMD(m_ovrSubmissionDevice->CreateRenderTargetView(
+                    xrSwapchain.resolvedSlices[slice].images[ovrDestIndex].Get(),
+                    &desc,
+                    renderTargets[ovrDestIndex].ReleaseAndGetAddressOf()));
+            }
+            const float color[4] = {slice == 0 ? 1.0f : 0.0f,
+                                    slice == 1 ? 1.0f : 0.0f,
+                                    0.0f,
+                                    1.0f};
+            m_ovrSubmissionContext->ClearRenderTargetView(renderTargets[ovrDestIndex].Get(), color);
+        }
+
+        if (needCopy) {
             if (!skipCommit) {
                 CHECK_OVRCMD(ovr_CommitTextureSwapChain(m_ovrSession, xrSwapchain.resolvedSlices[slice].ovrSwapchain));
             }
