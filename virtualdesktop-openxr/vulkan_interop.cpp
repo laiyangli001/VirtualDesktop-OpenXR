@@ -539,7 +539,7 @@ namespace virtualdesktop_openxr {
     void OpenXrRuntime::probeNativeVulkanOvr() {
         VkPhysicalDevice ovrPhysicalDevice = VK_NULL_HANDLE;
         ovrResult result = ovr_GetSessionPhysicalDeviceVk(
-            m_ovrSession, &m_adapterLuid, m_vkInstance, &ovrPhysicalDevice);
+            m_ovrSession, *reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid), m_vkInstance, &ovrPhysicalDevice);
         if (OVR_FAILURE(result) || ovrPhysicalDevice != m_vkPhysicalDevice) {
             Log("Native Vulkan OVR diagnostic unavailable: physical-device result=%d match=%d\n",
                 result,
