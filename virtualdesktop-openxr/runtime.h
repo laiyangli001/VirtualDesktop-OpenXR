@@ -606,6 +606,7 @@ namespace virtualdesktop_openxr {
         void initializeVulkanDispatch(VkInstance instance);
         void cleanupVulkan();
         bool isVulkanSession() const;
+        void probeNativeVulkanOvr();
         XrResult getSwapchainImagesVulkan(Swapchain& xrSwapchain, XrSwapchainImageVulkanKHR* vkImages, uint32_t count);
         void cleanupSwapchainImagesVulkan(Swapchain& xrSwapchain);
         void flushVulkanCommandQueue();
@@ -814,6 +815,7 @@ namespace virtualdesktop_openxr {
         VkPhysicalDevice m_vkPhysicalDevice{VK_NULL_HANDLE};
         VkPhysicalDeviceMemoryProperties m_vkMemoryProperties;
         VkQueue m_vkQueue{VK_NULL_HANDLE};
+        bool m_nativeVulkanDiagnosticEnabled{false};
         GlContext m_glContext{};
         // Pointers in the dispatcher must be initialized in initializeOpenGLDispatch().
         GlDispatch m_glDispatch;

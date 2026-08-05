@@ -475,6 +475,11 @@ namespace virtualdesktop_openxr {
         // Initialize common Vulkan resources.
         m_vkDispatch.vkGetPhysicalDeviceMemoryProperties(m_vkPhysicalDevice, &m_vkMemoryProperties);
         m_vkDispatch.vkGetDeviceQueue(m_vkDevice, vkBindings.queueFamilyIndex, vkBindings.queueIndex, &m_vkQueue);
+        m_nativeVulkanDiagnosticEnabled = GetEnvironmentVariableA(
+            "D2S_VDXR_VULKAN_NATIVE_DIAGNOSTIC", nullptr, 0) > 1;
+        if (m_nativeVulkanDiagnosticEnabled) {
+            probeNativeVulkanOvr();
+        }
 
         // We will use a shared fence to synchronize between the Vulkan queue and the D3D11
         // context.
@@ -529,6 +534,50 @@ namespace virtualdesktop_openxr {
         }
 
         return XR_SUCCESS;
+    }
+
+    void OpenXrRuntime::probeNativeVulkanOvr() {
+        VkPhysicalDevice ovrPhysicalDevice = VK_NULL_HANDLE;
+        ovrResult result = ovr_GetSessionPhysicalDeviceVk(
+            m_ovrSession, &m_adapterLuid, m_vkInstance, &ovrPhysicalDevice);
+        if (OVR_FAILURE(result) || ovrPhysicalDevice != m_vkPhysicalDevice) {
+            Log("Native Vulkan OVR diagnostic unavailable: physical-device result=%d match=%d\n",
+                result,
+                ovrPhysicalDevice == m_vkPhysicalDevice);
+            return;
+        }
+        result = ovr_SetSynchronizationQueueVk(m_ovrSession, m_vkQueue);
+        if (OVR_FAILURE(result)) {
+            Log("Native Vulkan OVR diagnostic unavailable: queue result=%d\n", result);
+            return;
+        }
+
+        ovrTextureSwapChainDesc desc{};
+        desc.Type = ovrTexture_2D;
+        desc.Format = OVR_FORMAT_R8G8B8A8_UNORM;
+        desc.ArraySize = 1;
+        desc.Width = 16;
+        desc.Height = 16;
+        desc.MipLevels = 1;
+        desc.SampleCount = 1;
+        desc.BindFlags = ovrTextureBind_DX_RenderTarget;
+        ovrTextureSwapChain swapchain = nullptr;
+        result = ovr_CreateTextureSwapChainVk(m_ovrSession, m_vkDevice, &desc, &swapchain);
+        int length = 0;
+        VkImage image = VK_NULL_HANDLE;
+        if (OVR_SUCCESS(result)) {
+            result = ovr_GetTextureSwapChainLength(m_ovrSession, swapchain, &length);
+        }
+        if (OVR_SUCCESS(result) && length > 0) {
+            result = ovr_GetTextureSwapChainBufferVk(m_ovrSession, swapchain, 0, &image);
+        }
+        if (swapchain) {
+            ovr_DestroyTextureSwapChain(m_ovrSession, swapchain);
+        }
+        Log("Native Vulkan OVR diagnostic: swapchain result=%d length=%d image=%p\n",
+            result,
+            length,
+            image);
     }
 
     // Initialize the function pointers for the Vulkan instance.
