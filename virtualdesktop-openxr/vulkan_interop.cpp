@@ -541,6 +541,28 @@ namespace virtualdesktop_openxr {
         ovrResult result = ovr_GetSessionPhysicalDeviceVk(
             m_ovrSession, *reinterpret_cast<ovrGraphicsLuid*>(&m_adapterLuid), m_vkInstance, &ovrPhysicalDevice);
         if (OVR_FAILURE(result) || ovrPhysicalDevice != m_vkPhysicalDevice) {
+            const auto logDeviceIdentity = [&](const char* name, VkPhysicalDevice device) {
+                VkPhysicalDeviceIDProperties identity{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES};
+                VkPhysicalDeviceProperties2 properties{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &identity};
+                m_vkDispatch.vkGetPhysicalDeviceProperties2(device, &properties);
+                Log("Native Vulkan OVR diagnostic %s: handle=%p luid-valid=%d luid=%02X%02X%02X%02X%02X%02X%02X%02X uuid=%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
+                    name,
+                    device,
+                    identity.deviceLUIDValid,
+                    identity.deviceLUID[0], identity.deviceLUID[1], identity.deviceLUID[2], identity.deviceLUID[3],
+                    identity.deviceLUID[4], identity.deviceLUID[5], identity.deviceLUID[6], identity.deviceLUID[7],
+                    identity.deviceUUID[0], identity.deviceUUID[1], identity.deviceUUID[2], identity.deviceUUID[3],
+                    identity.deviceUUID[4], identity.deviceUUID[5], identity.deviceUUID[6], identity.deviceUUID[7],
+                    identity.deviceUUID[8], identity.deviceUUID[9], identity.deviceUUID[10], identity.deviceUUID[11],
+                    identity.deviceUUID[12], identity.deviceUUID[13], identity.deviceUUID[14], identity.deviceUUID[15]);
+            };
+            Log("Native Vulkan OVR diagnostic session LUID: %08lX:%08lX\n",
+                static_cast<unsigned long>(m_adapterLuid.HighPart),
+                m_adapterLuid.LowPart);
+            logDeviceIdentity("OpenXR", m_vkPhysicalDevice);
+            if (ovrPhysicalDevice) {
+                logDeviceIdentity("LibOVR", ovrPhysicalDevice);
+            }
             Log("Native Vulkan OVR diagnostic unavailable: physical-device result=%d match=%d\n",
                 result,
                 ovrPhysicalDevice == m_vkPhysicalDevice);
