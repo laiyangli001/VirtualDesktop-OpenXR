@@ -82,6 +82,7 @@ using Microsoft::WRL::ComPtr;
 #include <OVR_CAPI.h>
 #include <OVR_CAPI_Audio.h>
 #include <OVR_CAPI_D3D.h>
+#include <OVR_CAPI_Vk.h>
 #include <OVR_Math.h>
 
 #include "OVR_Ext.h"
